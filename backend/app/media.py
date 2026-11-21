@@ -35,6 +35,9 @@ def _YoutubeDL(params=None, *args, **kwargs):
     cf = _cookie_file()
     if cf:
         params.setdefault("cookiefile", cf)
+    # YTDLP_PROXY=http://user:pass@host:port sends all YouTube traffic through a proxy in the right country.
+    if os.getenv("YTDLP_PROXY"):
+        params.setdefault("proxy", os.environ["YTDLP_PROXY"])
     return _YDL(params, *args, **kwargs)
 
 
@@ -100,7 +103,8 @@ def _fast_captions(info: dict) -> list[dict]:
         for lang in langs:
             for fmt in source[lang]:
                 if fmt.get("ext") == "vtt" and fmt.get("url"):
-                    r = requests.get(fmt["url"], timeout=15)
+                    proxy = os.getenv("YTDLP_PROXY")
+                    r = requests.get(fmt["url"], timeout=15, proxies={"http": proxy, "https": proxy} if proxy else None)
                     r.raise_for_status()
                     tr = _parse_vtt_text(r.text)
                     if tr:
